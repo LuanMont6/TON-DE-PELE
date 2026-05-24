@@ -79,6 +79,7 @@
       <a onclick="closeMobileMenu();filterCat('Lingerie')">Lingerie</a>
       <a onclick="closeMobileMenu();filterCat('Pijama')">Sleepwear</a>
       <a onclick="closeMobileMenu();filterCat('Moda Praia')">Moda Praia</a>
+      <a onclick="closeMobileMenu();filterCat('Cueca')">Cuecas</a>
       <a onclick="closeMobileMenu();filterNewProducts()">Novidades ✦</a>
       <a onclick="closeMobileMenu();filterSaleProducts()">Sale 🏷</a>
     </nav>
@@ -165,17 +166,11 @@
           </div>
         </div>
         <div class="carousel-slide">
-          <div class="slide-content">
+          <img src="img/carousel-pijamas.png" alt="Pijamas & Bodys">
+          <div class="slide-content" style="position:relative;z-index:2;">
             <div class="slide-label">Dia a dia</div>
             <div class="slide-title">Pijamas & Bodys</div>
             <div class="slide-sub">Para cada hora do seu dia</div>
-            <div class="slide-art">
-              <svg width="85" height="110" viewBox="0 0 85 110" fill="none">
-                <ellipse cx="42" cy="33" rx="30" ry="22" fill="#C9848A" opacity="0.55" />
-                <path d="M12 33 Q18 60 14 100 L70 100 Q66 60 72 33 Q57 54 42 51 Q27 54 12 33Z" fill="#C9848A"
-                  opacity="0.88" />
-              </svg>
-            </div>
           </div>
         </div>
       </div>
@@ -204,6 +199,7 @@
     <button class="cat-btn" data-cat="Pijama">Pijamas</button>
     <button class="cat-btn" data-cat="Moda Praia">Moda Praia</button>
     <button class="cat-btn" data-cat="Vestido">Vestidos</button>
+    <button class="cat-btn" data-cat="Cueca">Cuecas</button>
   </div>
 
   <div class="section-header">
@@ -610,6 +606,7 @@
               </button>
             </div>
           </div>
+          <div id="modalStockInfo" style="display:none;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;"></div>
           <button class="modal-add" id="modalAddBtn" onclick="addToCartFromModal()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
@@ -678,6 +675,7 @@
                 <option>Vestido</option>
                 <option>Sutiã</option>
                 <option>Calcinha</option>
+                <option>Cueca</option>
               </select>
             </div>
           </div>
@@ -686,6 +684,10 @@
             </div>
             <div class="form-group"><label>Preço antigo (promoção)</label><input type="text" id="editOldPrice"
                 placeholder="420,00"></div>
+          </div>
+          <div class="form-group">
+            <label>Estoque <span style="font-weight:300;font-size:10px;color:var(--muted);">— deixe em branco para sem controle de estoque</span></label>
+            <input type="number" id="editStock" placeholder="Ex: 10" min="0" step="1">
           </div>
           <div class="form-group"><label>Descrição</label><textarea id="editDesc"
               placeholder="Descreva a peça, tecido, detalhes especiais..."></textarea></div>

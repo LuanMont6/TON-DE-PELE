@@ -1,4 +1,4 @@
-﻿/* ══ FIREBASE ══ */
+/* ══ FIREBASE ══ */
 const firebaseConfig = {
   apiKey:            "AIzaSyBzKn5k1ZkVNYu-94_EMvoBWaRW-CHaGro",
   authDomain:        "ton-de-pele.firebaseapp.com",
@@ -141,8 +141,11 @@ function closeCart() {
   document.body.style.overflow = '';
 }
 
+function isOutOfStock(p) { return typeof p.stock === 'number' && p.stock <= 0; }
+
 function addToCart(productId, color, colorHex, size) {
   const p = products.find(x => x.id === productId); if (!p) return;
+  if (isOutOfStock(p)) { showToast('Produto esgotado ✕'); return; }
   const key = `${productId}-${color}-${size}`;
   const existing = cart.find(i => i.key === key);
   if (existing) { existing.qty++; }
@@ -410,13 +413,19 @@ function renderGrid(filter) {
   filtered.forEach(p => {
     const hasImg = p.media.length > 0 && p.media[0].type === 'image';
     const imgHTML = hasImg ? `<img src="${p.media[0].src}" alt="${p.name}">` : p.svgPath || '';
-    const badgeHTML = p.badge ? `<span class="card-badge ${p.badge}">${p.badge === 'new' ? 'Novo' : '-' + getDiscount(p) + '%'}</span>` : '';
+    const outOfStock = isOutOfStock(p);
+    let badgeHTML = '';
+    if (outOfStock) badgeHTML = `<span class="card-badge esgotado">Esgotado</span>`;
+    else if (p.badge) badgeHTML = `<span class="card-badge ${p.badge}">${p.badge === 'new' ? 'Novo' : '-' + getDiscount(p) + '%'}</span>`;
     const priceHTML = p.oldPrice ? `<span class="old">${p.oldPrice}</span><span class="sale-p">${p.price}</span>` : p.price;
     const colorsHTML = p.colors.map(c => `<div class="color-dot" style="background:${c}" title="${c}"></div>`).join('');
     const isFav = wishlist.includes(p.id);
     const heartStyle = isFav ? 'color:var(--rose);' : '';
     const heartChar = isFav ? '♥' : '♡';
-    grid.innerHTML += `<div class="card" onclick="openProduct(${p.id})">
+    const quickAddBtn = outOfStock
+      ? `<button class="quick-add quick-add-disabled" disabled onclick="event.stopPropagation()">Esgotado</button>`
+      : `<button class="quick-add" onclick="event.stopPropagation();quickAdd(${p.id})">+ Adicionar ao carrinho</button>`;
+    grid.innerHTML += `<div class="card${outOfStock?' card-out-of-stock':''}" onclick="openProduct(${p.id})">
       <div class="card-img">
         <div class="card-img-placeholder">${imgHTML}</div>
         ${badgeHTML}
@@ -424,7 +433,7 @@ function renderGrid(filter) {
           <button class="action-btn" id="fav-btn-${p.id}" style="${heartStyle}" onclick="toggleWishlist(${p.id},this,event)" title="Favoritar">${heartChar}</button>
           <button class="action-btn" onclick="event.stopPropagation();openProduct(${p.id})" title="Ver detalhes">⤢</button>
         </div>
-        <button class="quick-add" onclick="event.stopPropagation();quickAdd(${p.id})">+ Adicionar ao carrinho</button>
+        ${quickAddBtn}
       </div>
       <div class="card-cat">${p.cat}</div>
       <div class="card-name">${p.name}</div>
@@ -459,7 +468,26 @@ function openProduct(id) {
   } else { ytFrame.src=''; ytBlock.style.display='none'; }
   const btn = document.getElementById('modalAddBtn');
   btn.classList.remove('modal-add-success');
-  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> Adicionar ao carrinho`;
+  const outOfStock = isOutOfStock(p);
+  if (outOfStock) {
+    btn.disabled = true;
+    btn.classList.add('modal-add-esgotado');
+    btn.innerHTML = 'Produto Esgotado';
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('modal-add-esgotado');
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> Adicionar ao carrinho`;
+  }
+  const stockInfoEl = document.getElementById('modalStockInfo');
+  if (stockInfoEl) {
+    if (typeof p.stock === 'number') {
+      stockInfoEl.textContent = outOfStock ? 'Esgotado' : `${p.stock} em estoque`;
+      stockInfoEl.style.display = 'block';
+      stockInfoEl.style.color = outOfStock ? 'var(--rose-dark)' : 'var(--muted)';
+    } else {
+      stockInfoEl.style.display = 'none';
+    }
+  }
   document.getElementById('productModal').classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -581,6 +609,7 @@ function selectAdminProduct(id) {
   document.getElementById('editCat').value=p.cat;
   document.getElementById('editPrice').value=p.price.replace('R$ ','');
   document.getElementById('editOldPrice').value=p.oldPrice?p.oldPrice.replace('R$ ',''):'';
+  document.getElementById('editStock').value=typeof p.stock==='number'?p.stock:'';
   document.getElementById('editDesc').value=p.desc||'';
   document.getElementById('editSizes').value=p.sizes.join(', ');
   document.getElementById('editBadge').value=p.badge||'';
@@ -646,6 +675,8 @@ async function saveDetails() {
   p.cat=document.getElementById('editCat').value;
   const pr=document.getElementById('editPrice').value.trim(); const op=document.getElementById('editOldPrice').value.trim();
   p.price=pr?'R$ '+pr:p.price; p.oldPrice=op?'R$ '+op:'';
+  const stockVal=document.getElementById('editStock').value.trim();
+  p.stock = stockVal !== '' ? parseInt(stockVal, 10) : null;
   p.desc=document.getElementById('editDesc').value.trim();
   p.sizes=document.getElementById('editSizes').value.split(',').map(s=>s.trim()).filter(Boolean);
   p.colors=adminColors.length>0?adminColors:p.colors;
@@ -872,9 +903,3 @@ function initReveal() {
 
   document.querySelectorAll('.reveal, section').forEach(el => observer.observe(el));
 }
-
-// Inicializa no DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-  _initCarousel();
-  initReveal();
-});
