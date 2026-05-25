@@ -13,6 +13,10 @@ const db   = firebase.firestore();
 
 const WHATSAPP = '5582999004440';
 
+const FALLBACK_DRESS_SVG = `<svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>`;
+const HEART_FILLED_SVG  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+const HEART_OUTLINE_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+
 /* ══════════════════════════════════════
    ADMIN WELCOME POPUP
 ══════════════════════════════════════ */
@@ -91,7 +95,7 @@ function updateLoginArea() {
     const initials = currentUser.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
     area.innerHTML = `<div class="user-info"><div class="user-avatar">${initials}</div><button class="login-btn" onclick="logout()" style="font-size:9px;padding:6px 10px;">Sair</button></div>`;
     adminContainer.innerHTML = currentUser.isAdmin
-      ? `<button class="admin-btn" onclick="openAdmin()">✦ Admin</button>`
+      ? `<button class="admin-btn" onclick="openAdmin()"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:3px;"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"/></svg>Admin</button>`
       : '';
   } else {
     area.innerHTML = `<button class="login-btn" onclick="openLogin()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Entrar</button>`;
@@ -176,7 +180,7 @@ function renderCart() {
   }
   list.innerHTML = cart.map(item => `
     <div class="cart-item" data-key="${item.key}">
-      <div class="cart-item-img">${item.imgSrc?`<img src="${item.imgSrc}" alt="">`:`<div style="opacity:0.2;">${item.svgPath||'👗'}</div>`}</div>
+      <div class="cart-item-img">${item.imgSrc?`<img src="${item.imgSrc}" alt="">`:`<div style="opacity:0.2;">${item.svgPath||FALLBACK_DRESS_SVG}</div>`}</div>
       <div class="cart-item-info">
         <div class="cart-item-name">${item.name}</div>
         <div class="cart-item-detail"><span class="cart-item-color-preview" style="background:${item.colorHex};"></span>${item.size}</div>
@@ -206,7 +210,7 @@ function openCheckoutFromCart() {
   const total = cart.reduce((s,i)=>s+i.priceNum*i.qty,0);
   const first = cart[0];
   document.getElementById('coProdSummary').innerHTML = `
-    <div class="co-product-thumb">${first.imgSrc?`<img src="${first.imgSrc}" alt="">`:first.svgPath||'👗'}</div>
+    <div class="co-product-thumb">${first.imgSrc?`<img src="${first.imgSrc}" alt="">`:first.svgPath||FALLBACK_DRESS_SVG}</div>
     <div class="co-product-info"><strong>${cart.length>1?cart.length+' itens':first.name}</strong><span>${cart.length>1?'Vários itens na sacola':first.size}</span></div>
     <div class="co-product-price">R$ ${total.toFixed(2).replace('.',',')}</div>`;
   document.getElementById('coTotal').textContent = 'R$ '+total.toFixed(2).replace('.',',');
@@ -325,11 +329,11 @@ function toggleWishlist(id, btnEl, e) {
   const idx = wishlist.indexOf(id);
   if (idx === -1) {
     wishlist.push(id);
-    if (btnEl) { btnEl.textContent = '♥'; btnEl.style.color = 'var(--rose)'; }
-    showToast('Adicionado aos favoritos ♥');
+    if (btnEl) { btnEl.innerHTML = HEART_FILLED_SVG; btnEl.style.color = 'var(--rose)'; }
+    showToast('Adicionado aos favoritos ✓');
   } else {
     wishlist.splice(idx, 1);
-    if (btnEl) { btnEl.textContent = '♡'; btnEl.style.color = ''; }
+    if (btnEl) { btnEl.innerHTML = HEART_OUTLINE_SVG; btnEl.style.color = ''; }
     showToast('Removido dos favoritos');
   }
   saveWishlist();
@@ -364,14 +368,14 @@ function renderWishlist() {
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
       </svg>
       <p>Nenhum favorito ainda</p>
-      <p style="font-size:11px;opacity:0.6;">Clique no ♡ nas peças para salvar</p>
+      <p style="font-size:11px;opacity:0.6;">Clique no <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> nas peças para salvar</p>
     </div>`;
     return;
   }
   list.innerHTML = favProds.map(p => {
     const imgHTML = p.media.length > 0 && p.media[0].type === 'image'
       ? `<img src="${p.media[0].src}" alt="">`
-      : `<div style="opacity:0.2;">${p.svgPath || '👗'}</div>`;
+      : `<div style="opacity:0.2;">${p.svgPath || FALLBACK_DRESS_SVG}</div>`;
     return `<div class="cart-item">
       <div class="cart-item-img">${imgHTML}</div>
       <div class="cart-item-info">
@@ -421,7 +425,7 @@ function renderGrid(filter) {
     const colorsHTML = p.colors.map(c => `<div class="color-dot" style="background:${c}" title="${c}"></div>`).join('');
     const isFav = wishlist.includes(p.id);
     const heartStyle = isFav ? 'color:var(--rose);' : '';
-    const heartChar = isFav ? '♥' : '♡';
+    const heartChar = isFav ? HEART_FILLED_SVG : HEART_OUTLINE_SVG;
     const quickAddBtn = outOfStock
       ? `<button class="quick-add quick-add-disabled" disabled onclick="event.stopPropagation()">Esgotado</button>`
       : `<button class="quick-add" onclick="event.stopPropagation();quickAdd(${p.id})">+ Adicionar ao carrinho</button>`;
@@ -522,10 +526,10 @@ function buildGallery(p) {
   _galleryItems = items;
   document.getElementById('galleryThumbs').innerHTML = items.map((item,idx)=>{
     let inner='';
-    if(item.kind==='placeholder') inner=`<div style="opacity:0.3;font-size:22px;">👗</div>`;
+    if(item.kind==='placeholder') inner=`<div style="opacity:0.3;">${item.svg||FALLBACK_DRESS_SVG}</div>`;
     else if(item.type==='image') inner=`<img src="${item.src}" alt="">`;
-    else if(item.type==='video') inner=`<span style="font-size:20px;">▶</span><span class="media-type-badge">Vídeo</span>`;
-    else if(item.kind==='youtube') inner=`<span style="font-size:20px;color:#FF0000;">▶</span><span class="media-type-badge">YT</span>`;
+    else if(item.type==='video') inner=`<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="media-type-badge">Vídeo</span>`;
+    else if(item.kind==='youtube') inner=`<svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="media-type-badge">YT</span>`;
     return `<div class="thumb${idx===0?' active':''}" onclick="setGalleryItem(${idx})">${inner}</div>`;
   }).join('');
   setGalleryItem(0);
@@ -594,7 +598,7 @@ function switchTab(tab) {
 function renderAdminList() {
   document.getElementById('adminProductList').innerHTML = products.map(p=>`
     <div class="admin-product-item${p.id===selectedProductId?' selected':''}" data-id="${p.id}" onclick="selectAdminProduct(${p.id})">
-      <div class="admin-product-thumb">${p.media.length>0&&p.media[0].type==='image'?`<img src="${p.media[0].src}" alt="">`:p.svgPath||'👗'}</div>
+      <div class="admin-product-thumb">${p.media.length>0&&p.media[0].type==='image'?`<img src="${p.media[0].src}" alt="">`:p.svgPath||FALLBACK_DRESS_SVG}</div>
       <div class="admin-product-info"><strong>${p.name}</strong><span>${p.cat} · ${p.price}</span></div>
       <button class="admin-edit-btn" onclick="event.stopPropagation();selectAdminProduct(${p.id});switchTab('details')">Editar →</button>
     </div>`).join('');

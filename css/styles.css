@@ -115,7 +115,7 @@ nav a:hover, nav a.active { color: var(--nude); }
 /* ── STORE INFO ── */
 .store-cards { padding: 0 3rem 4rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
 .store-card { border: 1px solid var(--border); padding: 1.8rem; background: #fff; }
-.store-card-icon { font-size: 22px; margin-bottom: 1rem; }
+.store-card-icon { font-size: 0; margin-bottom: 1rem; }
 .store-card h4 { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 400; margin-bottom: 0.6rem; }
 .store-card p { font-size: 12px; color: var(--muted); line-height: 1.8; }
 .store-card a { color: var(--rose); text-decoration: none; }
@@ -180,7 +180,7 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
   text-align: center;
 }
 .awb-header .awb-flower {
-  font-size: 36px;
+  font-size: 0;
   display: block;
   margin-bottom: 0.8rem;
 }
@@ -221,7 +221,7 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
 .awb-step:hover { background: var(--rose-light); }
 
 .awb-step-icon {
-  font-size: 26px;
+  font-size: 0;
   flex-shrink: 0;
   width: 44px; height: 44px;
   background: var(--rose-light);
@@ -463,7 +463,7 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
 .media-upload-area:hover { border-color: var(--rose); background: rgba(201,132,138,0.04); }
 .media-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 .media-upload-area p { font-size: 12px; color: var(--muted); margin-top: 8px; letter-spacing: 1px; }
-.upload-icon { font-size: 28px; color: var(--rose); }
+.upload-icon { font-size: 0; color: var(--rose); }
 .media-preview-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
 .media-preview-item { width: 80px; height: 80px; position: relative; background: var(--rose-light); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .media-preview-item img, .media-preview-item video { width: 100%; height: 100%; object-fit: cover; }
@@ -485,11 +485,12 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
 @media (max-width: 900px) {
   .hero-badge, nav { display: none; }
   .modal-body { grid-template-columns: 1fr; }
-  .modal-gallery { max-height: 360px; }
+  .modal-gallery { overflow: hidden; }
+  .gallery-main { aspect-ratio: unset; height: 55vw; min-height: 220px; max-height: 320px; }
   .form-row, .co-row, .pay-grid { grid-template-columns: 1fr; }
   .store-cards { grid-template-columns: 1fr; }
   .htb-inner { padding: 1.2rem 1.5rem; gap: 1.2rem; }
-  .awb-step-icon { width: 36px; height: 36px; font-size: 20px; }
+  .awb-step-icon { width: 36px; height: 36px; font-size: 0; }
   .awb-header h2 { font-size: 22px; }
 }
 
@@ -690,7 +691,7 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
 .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; max-width: 1100px; margin: 0 auto; }
 .testimonial-card { background: #fff; border: 1px solid var(--border); padding: 2rem; display: flex; flex-direction: column; gap: 1rem; transition: transform 0.3s, box-shadow 0.3s; }
 .testimonial-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(42,31,31,0.08); }
-.testimonial-stars { color: var(--rose); font-size: 14px; letter-spacing: 2px; }
+.testimonial-stars { color: var(--rose); display: flex; gap: 4px; align-items: center; }
 .testimonial-card p { font-size: 13px; line-height: 1.9; color: var(--muted); font-style: italic; flex: 1; }
 .testimonial-author { display: flex; align-items: center; gap: 0.8rem; margin-top: auto; }
 .testimonial-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--rose-light); color: var(--rose-dark); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
@@ -754,8 +755,8 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
   /* ── Product Modal ── */
   .modal { max-width: 100%; max-height: 100vh; border-radius: 0; }
   .modal-body { grid-template-columns: 1fr; }
-  .modal-gallery { overflow: hidden; max-height: none; }
-  .gallery-main { aspect-ratio: unset; height: 260px; }
+  .modal-gallery { overflow: hidden; }
+  .gallery-main { aspect-ratio: unset; height: 55vw; min-height: 220px; max-height: 320px; }
   .modal-info { padding: 1.5rem 1.2rem; gap: 0.8rem; }
   .modal-name { font-size: 24px; }
   .modal-price { font-size: 18px; }
@@ -818,7 +819,7 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
   .awb-body { padding: 1.2rem 1.2rem 0.6rem; }
   .awb-footer { padding: 0 1.2rem 1.5rem; }
   .awb-step { padding: 0.9rem 1rem; }
-  .awb-step-icon { width: 36px; height: 36px; font-size: 18px; flex-shrink: 0; }
+  .awb-step-icon { width: 36px; height: 36px; font-size: 0; flex-shrink: 0; }
   .awb-header h2 { font-size: 20px; }
 }
 
