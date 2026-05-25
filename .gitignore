@@ -8,3 +8,21 @@ format_html.py
 
 # Editor
 .vscode/
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+
+# NOTA DE SEGURANÇA — API Key do Firebase
+# A apiKey em js/main.js é uma chave PÚBLICA do Firebase (identificador de projeto,
+# não um segredo de servidor). Ela não pode ser ocultada num site estático.
+# A proteção real vem de duas camadas:
+#   1. firestore.rules  — regras server-side que impedem escrita sem isAdmin no Firestore.
+#   2. Restrição de domínio na Google Cloud Console:
+#      https://console.cloud.google.com/apis/credentials
+#      → selecione a chave "Browser key (auto created by Firebase)"
+#      → em "Restrições de aplicativo" escolha "Referenciadores HTTP"
+#      → adicione:  luanmont6.github.io/*  e  localhost/*
+#      Isso faz com que a chave só funcione vinda do seu domínio, bloqueando
+#      uso externo abusivo mesmo que alguém a copie.
+

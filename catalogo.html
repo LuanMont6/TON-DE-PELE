@@ -76,7 +76,7 @@
     </div>
     <nav class="mobile-nav-links">
       <a onclick="closeMobileMenu();scrollToSection('hero')">Início</a>
-      <a onclick="closeMobileMenu();filterCat('Lingerie')">Lingerie</a>
+      <a onclick="closeMobileMenu();filterCat('Sutiã')">Lingerie</a>
       <a onclick="closeMobileMenu();filterCat('Pijama')">Sleepwear</a>
       <a onclick="closeMobileMenu();filterCat('Moda Praia')">Moda Praia</a>
       <a onclick="closeMobileMenu();filterCat('Cueca')">Cuecas</a>
@@ -95,9 +95,10 @@
         <circle cx="11" cy="11" r="8" />
         <line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
-      <input type="text" id="searchInput" placeholder="Buscar peças..." oninput="handleSearch(this.value)">
+      <input type="text" id="searchInput" placeholder="Buscar peças..." oninput="handleSearch(this.value)" autocomplete="off">
       <button onclick="closeSearch()">✕</button>
     </div>
+    <div class="search-suggestions" id="searchSuggestions"></div>
   </div>
 
   <!-- COMO COMPRAR -->
@@ -204,7 +205,15 @@
 
   <div class="section-header">
     <h2 class="section-title" id="sectionTitle">Em <em>destaque</em></h2>
-    <button class="see-all" onclick="resetFilter()">Ver todos →</button>
+    <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">
+      <select id="sortSelect" class="sort-select" onchange="applySort()" aria-label="Ordenar produtos">
+        <option value="">Ordenar</option>
+        <option value="price_asc">Menor preço</option>
+        <option value="price_desc">Maior preço</option>
+        <option value="new">Novidades primeiro</option>
+      </select>
+      <button class="see-all" onclick="resetFilter()">Ver todos →</button>
+    </div>
   </div>
 
   <div class="grid" id="productsGrid"></div>
@@ -215,31 +224,8 @@
       <span class="hero-tag">Clientes felizes</span>
       <h2 class="section-title" style="margin:0;">O que dizem de <em>nós</em></h2>
     </div>
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <div class="testimonial-stars"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-        <p>"Qualidade incrível! A lingerie chegou super bem embalada e o tecido é ainda mais macio do que parecia nas fotos."</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">A</div>
-          <div><strong>Ana Paula</strong><span>Maceió, AL</span></div>
-        </div>
-      </div>
-      <div class="testimonial-card">
-        <div class="testimonial-stars"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-        <p>"Já sou cliente há 3 anos. Sempre volto porque os modelos são lindos e o atendimento no WhatsApp é rápido demais!"</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">C</div>
-          <div><strong>Camila S.</strong><span>Arapiraca, AL</span></div>
-        </div>
-      </div>
-      <div class="testimonial-card">
-        <div class="testimonial-stars"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-        <p>"O pijama de cetim é um sonho. Comprei para dar de presente e a pessoa amou. Com certeza vou voltar para comprar para mim!"</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">J</div>
-          <div><strong>Juliana M.</strong><span>Recife, PE</span></div>
-        </div>
-      </div>
+    <div class="testimonials-grid" id="testimonialsGrid">
+      <!-- rendered dynamically from Firestore via renderTestimonials() -->
     </div>
   </section>
 
@@ -448,7 +434,7 @@
   </div>
 
   <!-- LOGIN MODAL -->
-  <div class="overlay-base" id="loginOverlay">
+  <div class="overlay-base" id="loginOverlay" role="dialog" aria-modal="true" aria-label="Entrar na conta">
     <div class="login-modal">
       <button class="login-close" onclick="closeLogin()">✕</button>
       <h2 id="loginTitle">Bem-vinda</h2>
@@ -464,7 +450,7 @@
 
   <!-- WISHLIST DRAWER -->
   <div class="cart-overlay" id="wishlistOverlay" onclick="closeWishlist()"></div>
-  <div class="cart-drawer" id="wishlistDrawer">
+  <div class="cart-drawer" id="wishlistDrawer" role="dialog" aria-modal="true" aria-label="Lista de favoritos">
     <div class="cart-drawer-header">
       <h3>Favoritos</h3>
       <button class="cart-drawer-close" onclick="closeWishlist()">✕</button>
@@ -483,7 +469,7 @@
 
   <!-- CART DRAWER -->
   <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
-  <div class="cart-drawer" id="cartDrawer">
+  <div class="cart-drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-label="Sacola de compras">
     <div class="cart-drawer-header">
       <h3>Sua Sacola</h3>
       <button class="cart-drawer-close" onclick="closeCart()">✕</button>
@@ -504,7 +490,7 @@
   </div>
 
   <!-- CHECKOUT MODAL -->
-  <div class="checkout-overlay" id="checkoutOverlay">
+  <div class="checkout-overlay" id="checkoutOverlay" role="dialog" aria-modal="true" aria-label="Finalizar pedido">
     <div class="checkout-box">
       <div class="checkout-head">
         <h3>Finalizar pedido</h3>
@@ -554,6 +540,13 @@
                 class="pay-name">WhatsApp</span><span class="pay-desc">Combinar direto</span></span></button>
         </div>
         <div class="co-total"><span>Total do pedido</span><strong id="coTotal">—</strong></div>
+        <div class="co-coupon-row">
+          <div class="co-coupon-field">
+            <input id="coCoupon" type="text" placeholder="Cupom de desconto" style="text-transform:uppercase;" autocomplete="off">
+            <button class="co-coupon-btn" onclick="applyCoupon()">Aplicar</button>
+          </div>
+          <div id="couponFeedback" class="coupon-feedback" style="display:none;"></div>
+        </div>
         <button class="co-submit" onclick="submitOrder()">Confirmar pedido</button>
         <div class="co-whats">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="#25D366">
@@ -567,7 +560,7 @@
   </div>
 
   <!-- PRODUCT DETAIL MODAL -->
-  <div class="modal-overlay" id="productModal">
+  <div class="modal-overlay" id="productModal" role="dialog" aria-modal="true" aria-label="Detalhes do produto">
     <div class="modal" id="modalBox">
       <button class="modal-close" onclick="closeModal()">✕</button>
       <div class="modal-body">
@@ -615,13 +608,17 @@
             </svg>
             Adicionar ao carrinho
           </button>
+          <button class="modal-share" id="modalShareBtn" onclick="shareProduct()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Compartilhar
+          </button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ADMIN PANEL -->
-  <div class="admin-overlay" id="adminOverlay">
+  <div class="admin-overlay" id="adminOverlay" role="dialog" aria-modal="true" aria-label="Painel administrativo">
     <div class="admin-panel">
       <div class="admin-header">
         <h2>Painel Administrativo</h2><button class="admin-close" onclick="closeAdmin()">Fechar</button>
@@ -630,6 +627,8 @@
         <button class="admin-tab active" onclick="switchTab('products')">Peças</button>
         <button class="admin-tab" onclick="switchTab('media')">Fotos & Vídeos</button>
         <button class="admin-tab" onclick="switchTab('details')">Detalhes</button>
+        <button class="admin-tab" onclick="switchTab('testimonials');renderAdminTestimonials()">Depoimentos</button>
+        <button class="admin-tab" onclick="switchTab('orders');loadAdminOrders()">Pedidos</button>
       </div>
       <div class="admin-content">
         <div class="admin-section active" id="tab-products">
@@ -727,6 +726,25 @@
           </div>
           <button class="admin-save-btn" onclick="saveDetails()">Salvar Detalhes</button>
           <button class="delete-product-btn" onclick="deleteProduct()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg> Remover esta peça</button>
+        </div>
+
+        <div class="admin-section" id="tab-testimonials">
+          <div id="adminTestimonialsList"></div>
+          <div id="testimonialEditForm" style="display:none;margin-top:1.2rem;padding:1rem;border:1px solid var(--border);border-radius:8px;">
+            <input type="hidden" id="tEditId">
+            <div class="form-group"><label>Nome</label><input type="text" id="tEditName" placeholder="Ex: Ana Paula"></div>
+            <div class="form-group"><label>Cidade / Estado</label><input type="text" id="tEditLoc" placeholder="Ex: Maceió, AL"></div>
+            <div class="form-group"><label>Depoimento</label><textarea id="tEditText" placeholder="Escreva o depoimento aqui..." style="min-height:80px;"></textarea></div>
+            <div style="display:flex;gap:8px;">
+              <button class="admin-save-btn" style="flex:1;" onclick="saveTestimonial()">Salvar</button>
+              <button class="delete-product-btn" style="font-size:11px;padding:8px 14px;" onclick="document.getElementById('testimonialEditForm').style.display='none'">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-section" id="tab-orders">
+          <div class="orders-stats" id="ordersStats"></div>
+          <div id="adminOrdersList"><p style="font-size:12px;color:var(--muted);padding:1rem 0;">Carregando pedidos...</p></div>
         </div>
       </div>
     </div>

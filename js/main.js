@@ -119,11 +119,14 @@ auth.onAuthStateChanged(async (firebaseUser) => {
     }
     if (currentUser.isAdmin) {
       await seedProductsIfEmpty();
-      // Mostra popup de boas-vindas para admin após login
       setTimeout(() => showAdminWelcome(), 600);
     }
+    syncWishlistFromFirestore();
     showToast('Olá, ' + currentUser.name.split(' ')[0] + '! ✦');
-  } else { currentUser = null; }
+  } else {
+    currentUser = null;
+    wishlist = JSON.parse(localStorage.getItem(WISHLIST_KEY) || '[]');
+  }
   updateLoginArea();
 });
 
@@ -154,7 +157,7 @@ function addToCart(productId, color, colorHex, size) {
   const existing = cart.find(i => i.key === key);
   if (existing) { existing.qty++; }
   else {
-    const priceNum = parseFloat(p.price.replace('R$ ','').replace(',','.'));
+    const priceNum = parseFloat(p.price.replace(/R\$\s*/g, '').replace(',', '.').trim());
     cart.push({ key, id: productId, name: p.name, price: p.price, priceNum, color: color||'Padrão', colorHex: colorHex||p.colors[0]||'#C9848A', size: size||p.sizes[0]||'Único', qty: 1, imgSrc: p.media.length>0&&p.media[0].type==='image'?p.media[0].src:null, svgPath: p.svgPath||'' });
   }
   updateCartBadge();
@@ -183,7 +186,7 @@ function renderCart() {
       <div class="cart-item-img">${item.imgSrc?`<img src="${item.imgSrc}" alt="">`:`<div style="opacity:0.2;">${item.svgPath||FALLBACK_DRESS_SVG}</div>`}</div>
       <div class="cart-item-info">
         <div class="cart-item-name">${item.name}</div>
-        <div class="cart-item-detail"><span class="cart-item-color-preview" style="background:${item.colorHex};"></span>${item.size}</div>
+        <div class="cart-item-detail"><span class="cart-item-color-preview" style="background:${item.colorHex};"></span><span class="cart-item-color-name">${item.color}</span><span class="cart-item-size">${item.size}</span></div>
         <div class="cart-item-price">${item.price}</div>
         <div class="cart-qty">
           <button class="qty-btn" onclick="changeQty('${item.key}',-1)">−</button>
@@ -202,10 +205,61 @@ function renderCart() {
 let curPayment = 'pix';
 let checkoutMode = 'cart';
 let checkoutProduct = null;
+let activeCoupon = null;
+
+function _checkoutBaseTotal() {
+  if (checkoutMode === 'cart') return cart.reduce((s,i)=>s+i.priceNum*i.qty,0);
+  if (checkoutProduct) return parseFloat(checkoutProduct.price?.replace(/R\$\s*/g,'').replace(',','.')) || 0;
+  return 0;
+}
+function _checkoutFinalTotal() {
+  let t = _checkoutBaseTotal();
+  if (!activeCoupon) return t;
+  return activeCoupon.type === 'percent' ? t * (1 - activeCoupon.value/100) : Math.max(0, t - activeCoupon.value);
+}
+function updateCheckoutTotal() {
+  const t = _checkoutFinalTotal();
+  document.getElementById('coTotal').textContent = 'R$ ' + t.toFixed(2).replace('.',',');
+}
+
+async function applyCoupon() {
+  const code = (document.getElementById('coCoupon').value||'').trim().toUpperCase();
+  const fb   = document.getElementById('couponFeedback');
+  if (!code) return;
+  fb.style.display = 'none';
+  try {
+    const doc = await db.collection('coupons').doc(code).get();
+    if (!doc.exists || doc.data().active === false) {
+      activeCoupon = null;
+      fb.textContent = 'Cupom inválido ou expirado.';
+      fb.style.color = 'var(--rose-dark,#8b2e2e)';
+    } else {
+      activeCoupon = { code, ...doc.data() };
+      const desc = activeCoupon.type === 'percent'
+        ? `${activeCoupon.value}% de desconto aplicado`
+        : `R$ ${activeCoupon.value.toFixed(2).replace('.',',')} de desconto aplicado`;
+      fb.textContent = '✓ ' + desc;
+      fb.style.color = '#2e7d2e';
+    }
+  } catch(e) {
+    fb.textContent = 'Erro ao validar cupom.';
+    fb.style.color = 'var(--rose-dark,#8b2e2e)';
+  }
+  fb.style.display = 'block';
+  updateCheckoutTotal();
+}
+
+function _resetCouponUI() {
+  activeCoupon = null;
+  const inp = document.getElementById('coCoupon'); if (inp) inp.value = '';
+  const fb  = document.getElementById('couponFeedback'); if (fb) fb.style.display = 'none';
+}
 
 function openCheckoutFromCart() {
   if (cart.length===0) return;
   checkoutMode = 'cart';
+  checkoutProduct = null;
+  _resetCouponUI();
   closeCart();
   const total = cart.reduce((s,i)=>s+i.priceNum*i.qty,0);
   const first = cart[0];
@@ -232,31 +286,74 @@ function togglePickup() {
     const el=document.getElementById(id); el.disabled=c; el.style.opacity=c?'0.4':'1';
   });
 }
-function maskCep(i){let v=i.value.replace(/\D/g,'');if(v.length>5)v=v.slice(0,5)+'-'+v.slice(5,8);i.value=v;}
+function maskCep(i) {
+  let v = i.value.replace(/\D/g,'');
+  if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+  i.value = v;
+  if (v.replace('-','').length === 8) lookupCep(v.replace('-',''));
+}
+async function lookupCep(cep) {
+  try {
+    const res  = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await res.json();
+    if (data.erro) return;
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) { el.value = val; el.disabled = false; el.style.opacity = '1'; } };
+    set('coStreet', data.logradouro);
+    set('coNeigh',  data.bairro);
+    set('coCity',   data.localidade);
+    set('coState',  data.uf);
+    setTimeout(() => document.getElementById('coNum')?.focus(), 50);
+  } catch(e) { /* silently ignore network errors */ }
+}
 
-function submitOrder() {
+async function submitOrder() {
   const name=document.getElementById('coName').value.trim();
   const phone=document.getElementById('coPhone').value.trim();
+  const email=document.getElementById('coEmail').value.trim();
   const pickup=document.getElementById('coPickup').checked;
   const street=document.getElementById('coStreet').value.trim();
+  const num=document.getElementById('coNum').value.trim();
   const city=document.getElementById('coCity').value.trim();
+  const state=document.getElementById('coState').value.trim();
+  const neigh=document.getElementById('coNeigh').value.trim();
   if(!name){showToast('Informe seu nome!');return;}
   if(!phone){showToast('Informe seu WhatsApp!');return;}
   if(!pickup&&(!street||!city)){showToast('Informe o endereço!');return;}
   const pays={pix:'Pix',cartao:'Cartão',boleto:'Boleto',whatsapp:'WhatsApp'};
+  const finalTotal = _checkoutFinalTotal();
   let msg = '🛍️ *Pedido Ton de Pele Lingerie*\n\n';
+  const orderItems = [];
   if (checkoutMode==='cart') {
     cart.forEach((item,i)=>{
-      msg+=`*${i+1}. ${item.name}*\n   Tamanho: ${item.size} | Qtd: ${item.qty}\n   Valor: ${item.price}\n\n`;
+      msg+=`*${i+1}. ${item.name}*\n   Cor: ${item.color} | Tamanho: ${item.size} | Qtd: ${item.qty}\n   Valor: ${item.price}\n\n`;
+      orderItems.push({name:item.name,color:item.color,size:item.size,qty:item.qty,price:item.price,priceNum:item.priceNum});
     });
-    const total=cart.reduce((s,i)=>s+i.priceNum*i.qty,0);
-    msg+=`*Total: R$ ${total.toFixed(2).replace('.',',')}*\n`;
   }
+  if (activeCoupon) msg += `🏷️ Cupom: ${activeCoupon.code}\n`;
+  msg+=`*Total: R$ ${finalTotal.toFixed(2).replace('.',',')}*\n`;
   msg+=`\n👤 Nome: ${name}\n📞 WhatsApp: ${phone}\n`;
-  msg+=pickup?`🏬 Retirada na loja\n`:`📍 ${street}${city?', '+city:''}\n`;
+  msg+=pickup?`🏬 Retirada na loja\n`:`📍 ${street}${num?', '+num:''}, ${neigh?neigh+', ':''}${city}${state?'/'+state:''}\n`;
   msg+=`💳 Pagamento: ${pays[curPayment]}`;
+  // Save order to Firestore (fire-and-forget)
+  const orderData = {
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    name, phone, email: email||'',
+    pickup,
+    address: pickup ? 'Retirada na loja' : `${street}${num?', '+num:''}, ${neigh?neigh+', ':''}${city}${state?'/'+state:''}`,
+    payment: pays[curPayment],
+    items: orderItems,
+    baseTotal: _checkoutBaseTotal(),
+    total: finalTotal,
+    coupon: activeCoupon ? activeCoupon.code : null,
+    discount: activeCoupon ? (_checkoutBaseTotal() - finalTotal) : 0,
+    status: 'novo',
+    uid: currentUser ? currentUser.uid : null
+  };
+  try { await db.collection('orders').add(orderData); } catch(e) { console.warn('Pedido não salvo no Firestore:', e); }
   window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`,'_blank');
-  closeCheckout(); showToast('Pedido enviado! ✓');
+  closeCheckout();
+  showToast('Pedido enviado! ✓');
+  cart.length = 0; updateCartBadge();
 }
 
 document.getElementById('checkoutOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('checkoutOverlay'))closeCheckout();});
@@ -297,8 +394,17 @@ async function loadProducts() {
     console.warn('Firestore indisponivel. Usando dados locais.');
     products = SEED_PRODUCTS.map(p=>({...p,_docId:null}));
   }
+  // Sanitize prices that may have been saved with double "R$ " prefix
+  products.forEach(p => {
+    const clean = v => v ? 'R$ ' + v.replace(/R\$\s*/g, '').trim() : v;
+    p.price    = clean(p.price);
+    p.oldPrice = p.oldPrice ? clean(p.oldPrice) : '';
+  });
   selectedProductId = products.length>0 ? products[0].id : null;
   renderGrid();
+  // Open product if URL has ?p=ID (share link)
+  const sharedId = parseInt(new URLSearchParams(location.search).get('p'));
+  if (sharedId) setTimeout(() => openProduct(sharedId), 300);
 }
 
 /* ══ HEADER SCROLL EFFECT ══ */
@@ -322,7 +428,29 @@ async function seedProductsIfEmpty() {
 const WISHLIST_KEY = 'tdp_wishlist';
 let wishlist = JSON.parse(localStorage.getItem(WISHLIST_KEY) || '[]');
 
-function saveWishlist() { localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist)); }
+async function saveWishlist() {
+  localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
+  if (currentUser) {
+    try { await db.collection('users').doc(currentUser.uid).update({ wishlist }); } catch(e) {}
+  }
+}
+
+async function syncWishlistFromFirestore() {
+  if (!currentUser) return;
+  try {
+    const doc = await db.collection('users').doc(currentUser.uid).get();
+    const remote = (doc.exists && Array.isArray(doc.data().wishlist)) ? doc.data().wishlist : [];
+    wishlist = [...new Set([...wishlist, ...remote])];
+    localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
+    await db.collection('users').doc(currentUser.uid).update({ wishlist });
+    renderWishlist();
+    // refresh heart icons on grid
+    wishlist.forEach(id => {
+      const btn = document.getElementById('fav-btn-'+id);
+      if (btn) { btn.innerHTML = HEART_FILLED_SVG; btn.style.color = 'var(--rose)'; }
+    });
+  } catch(e) {}
+}
 
 function toggleWishlist(id, btnEl, e) {
   if (e) e.stopPropagation();
@@ -393,16 +521,22 @@ function renderWishlist() {
 }
 
 /* ══ GRID ══ */
+let currentFilter = null;
+let currentSort   = '';
+
+function priceVal(p) { return parseFloat(p.price.replace(/R\$\s*/g,'').replace(',','.')) || 0; }
+
 function renderGrid(filter) {
   const grid = document.getElementById('productsGrid');
   grid.innerHTML = '';
   if (typeof filter === 'string') filter = filter ? { cat: filter } : null;
+  currentFilter = filter !== undefined ? filter : currentFilter;
   let filtered = [...products];
-  if (filter) {
-    if (filter.cat)   filtered = filtered.filter(p => p.cat === filter.cat);
-    if (filter.badge) filtered = filtered.filter(p => p.badge === filter.badge);
-    if (filter.q) {
-      const q = filter.q.toLowerCase();
+  if (currentFilter) {
+    if (currentFilter.cat)   filtered = filtered.filter(p => p.cat === currentFilter.cat);
+    if (currentFilter.badge) filtered = filtered.filter(p => p.badge === currentFilter.badge);
+    if (currentFilter.q) {
+      const q = currentFilter.q.toLowerCase();
       filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(q) ||
         p.cat.toLowerCase().includes(q) ||
@@ -410,13 +544,17 @@ function renderGrid(filter) {
       );
     }
   }
+  // Apply sort
+  if (currentSort === 'price_asc')  filtered.sort((a,b) => priceVal(a) - priceVal(b));
+  else if (currentSort === 'price_desc') filtered.sort((a,b) => priceVal(b) - priceVal(a));
+  else if (currentSort === 'new')   filtered.sort((a,b) => (b.badge==='new'?1:0) - (a.badge==='new'?1:0));
   if (filtered.length === 0) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);font-size:13px;letter-spacing:1px;">Nenhuma peça encontrada</div>';
     return;
   }
   filtered.forEach(p => {
     const hasImg = p.media.length > 0 && p.media[0].type === 'image';
-    const imgHTML = hasImg ? `<img src="${p.media[0].src}" alt="${p.name}">` : p.svgPath || '';
+    const imgHTML = hasImg ? `<img src="${p.media[0].src}" alt="${p.name}" loading="lazy">` : p.svgPath || '';
     const outOfStock = isOutOfStock(p);
     let badgeHTML = '';
     if (outOfStock) badgeHTML = `<span class="card-badge esgotado">Esgotado</span>`;
@@ -539,6 +677,20 @@ function closeModal() { document.getElementById('productModal').classList.remove
 function selectColor(el) { el.closest('.modal-colors').querySelectorAll('.modal-color').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); }
 function selectSize(el) { el.closest('.modal-sizes').querySelectorAll('.size-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); }
 
+function shareProduct() {
+  if (!currentModalProduct) return;
+  const p = currentModalProduct;
+  const base = location.origin + location.pathname;
+  const url  = `${base}?p=${p.id}`;
+  if (navigator.share) {
+    navigator.share({ title: p.name, text: `Olha essa peça da Ton de Pele: ${p.name} — ${p.price}`, url }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('Link copiado!'))
+      .catch(() => showToast('Link: ' + url));
+  }
+}
+
 /* ══ GUIA DE MEDIDAS ══ */
 const MEASURE_COLS = ['Busto (cm)','Cintura (cm)','Quadril (cm)'];
 const MEASURE_KEYS = ['busto','cintura','quadril'];
@@ -590,7 +742,7 @@ function openAdminPanel() {
 function closeAdmin() { document.getElementById('adminOverlay').classList.remove('active'); document.body.style.overflow=''; renderGrid(); }
 
 function switchTab(tab) {
-  document.querySelectorAll('.admin-tab').forEach((t,i)=>t.classList.toggle('active',['products','media','details'][i]===tab));
+  document.querySelectorAll('.admin-tab').forEach((t,i)=>t.classList.toggle('active',['products','media','details','testimonials','orders'][i]===tab));
   document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
 }
@@ -677,7 +829,7 @@ async function saveDetails() {
   const p=products.find(x=>x.id===selectedProductId); if(!p) return;
   p.name=document.getElementById('editName').value.trim()||p.name;
   p.cat=document.getElementById('editCat').value;
-  const pr=document.getElementById('editPrice').value.trim(); const op=document.getElementById('editOldPrice').value.trim();
+  const pr=document.getElementById('editPrice').value.trim().replace(/R\$\s*/g,''); const op=document.getElementById('editOldPrice').value.trim().replace(/R\$\s*/g,'');
   p.price=pr?'R$ '+pr:p.price; p.oldPrice=op?'R$ '+op:'';
   const stockVal=document.getElementById('editStock').value.trim();
   p.stock = stockVal !== '' ? parseInt(stockVal, 10) : null;
@@ -755,6 +907,7 @@ document.querySelectorAll('.overlay-base').forEach(overlay => {
 });
 
 loadProducts();
+loadTestimonials();
 
 /* ══ SCROLL & NAV ══ */
 function scrollToSection(id) {
@@ -767,6 +920,11 @@ function scrollToProducts() {
 }
 
 /* ══ CATEGORY FILTERS (chamados pela nav e hero) ══ */
+function applySort() {
+  const sel = document.getElementById('sortSelect');
+  currentSort = sel ? sel.value : '';
+  renderGrid(currentFilter);
+}
 function filterCat(cat) {
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
   renderGrid({ cat });
@@ -784,7 +942,8 @@ function filterSaleProducts() {
 }
 function resetFilter() {
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === ''));
-  renderGrid();
+  currentFilter = null;
+  renderGrid(null);
 }
 
 /* ══ SEARCH ══ */
@@ -799,12 +958,44 @@ function closeSearch() {
   if (bar) bar.classList.remove('open');
   const inp = document.getElementById('searchInput');
   if (inp) inp.value = '';
+  hideSuggestions();
   renderGrid();
 }
 function handleSearch(val) {
   const q = val.trim();
+  renderSuggestions(q);
   if (!q) { renderGrid(); return; }
   renderGrid({ q });
+}
+function renderSuggestions(q) {
+  const box = document.getElementById('searchSuggestions');
+  if (!box) return;
+  if (!q) { hideSuggestions(); return; }
+  const matches = products.filter(p =>
+    p.name.toLowerCase().includes(q.toLowerCase()) ||
+    p.cat.toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 6);
+  if (!matches.length) { hideSuggestions(); return; }
+  box.innerHTML = matches.map(p => {
+    const thumb = p.media.length>0 && p.media[0].type==='image'
+      ? `<img src="${p.media[0].src}" alt="" class="sug-thumb">`
+      : `<div class="sug-thumb sug-thumb-svg">${p.svgPath||FALLBACK_DRESS_SVG}</div>`;
+    return `<div class="suggestion-item" onclick="pickSuggestion(${p.id})">
+      ${thumb}
+      <div class="sug-info"><div class="sug-name">${p.name}</div><div class="sug-cat">${p.cat}</div></div>
+      <div class="sug-price">${p.price}</div>
+    </div>`;
+  }).join('');
+  box.style.display = 'block';
+}
+function hideSuggestions() {
+  const box = document.getElementById('searchSuggestions');
+  if (box) { box.innerHTML = ''; box.style.display = 'none'; }
+}
+function pickSuggestion(id) {
+  hideSuggestions();
+  closeSearch();
+  openProduct(id);
 }
 
 /* ══ CAROUSEL ══ */
@@ -817,6 +1008,17 @@ function _initCarousel() {
     `<button class="carousel-dot${i === 0 ? ' active' : ''}" onclick="carouselGo(${i})"></button>`
   ).join('');
   setInterval(() => carouselNext(), 5000);
+
+  // Touch swipe support
+  const track = document.querySelector('.hero-carousel');
+  if (track) {
+    let _touchStartX = 0;
+    track.addEventListener('touchstart', e => { _touchStartX = e.touches[0].clientX; }, { passive: true });
+    track.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - _touchStartX;
+      if (Math.abs(dx) > 40) dx < 0 ? carouselNext() : carouselPrev();
+    }, { passive: true });
+  }
 }
 function carouselGo(idx) {
   const slides = document.querySelectorAll('.carousel-slide');
@@ -856,6 +1058,152 @@ function openSizeGuideModal() {
   if (!el) return;
   el.classList.add('active');
   document.body.style.overflow = 'hidden';
+}
+
+/* ══ ORDERS ADMIN ══ */
+const ORDER_STATUS_LABELS = { novo:'Novo', confirmado:'Confirmado', enviado:'Enviado', entregue:'Entregue', cancelado:'Cancelado' };
+const ORDER_STATUS_COLORS = { novo:'#c08060', confirmado:'#5a7a8a', enviado:'#8a6a9a', entregue:'#2e7d2e', cancelado:'#8b2e2e' };
+
+async function loadAdminOrders() {
+  const list = document.getElementById('adminOrdersList');
+  const stats = document.getElementById('ordersStats');
+  if (!list) return;
+  list.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:1rem 0;">Carregando...</p>';
+  try {
+    const snap = await db.collection('orders').orderBy('createdAt','desc').limit(100).get();
+    if (snap.empty) { list.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:1rem 0;">Nenhum pedido ainda.</p>'; stats.innerHTML=''; return; }
+    const orders = snap.docs.map(d=>({_id:d.id,...d.data()}));
+    // Stats
+    const totalRev = orders.reduce((s,o)=>s+(o.total||0),0);
+    const now = new Date(); const thisMonth = orders.filter(o=>{ if(!o.createdAt) return false; const d=o.createdAt.toDate(); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); });
+    const monthRev = thisMonth.reduce((s,o)=>s+(o.total||0),0);
+    stats.innerHTML = `
+      <div class="orders-stat-card"><div class="orders-stat-num">${orders.length}</div><div class="orders-stat-label">Total de pedidos</div></div>
+      <div class="orders-stat-card"><div class="orders-stat-num">R$ ${totalRev.toFixed(2).replace('.',',')}</div><div class="orders-stat-label">Faturamento total</div></div>
+      <div class="orders-stat-card"><div class="orders-stat-num">${thisMonth.length}</div><div class="orders-stat-label">Pedidos este mês</div></div>
+      <div class="orders-stat-card"><div class="orders-stat-num">R$ ${monthRev.toFixed(2).replace('.',',')}</div><div class="orders-stat-label">Receita este mês</div></div>`;
+    // List
+    list.innerHTML = orders.map(o => {
+      const date = o.createdAt ? o.createdAt.toDate().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+      const statusColor = ORDER_STATUS_COLORS[o.status] || '#888';
+      const statusOpts = Object.entries(ORDER_STATUS_LABELS).map(([v,l])=>`<option value="${v}"${o.status===v?' selected':''}>${l}</option>`).join('');
+      const itemsText = o.items ? o.items.map(i=>`${i.qty}× ${i.name} (${i.size})`).join(', ') : '—';
+      return `<div class="admin-order-card">
+        <div class="admin-order-head">
+          <div>
+            <strong style="font-size:13px;">${o.name||'—'}</strong>
+            <span style="font-size:10px;color:var(--muted);margin-left:8px;">${date}</span>
+          </div>
+          <span class="order-status-badge" style="background:${statusColor};">${ORDER_STATUS_LABELS[o.status]||o.status}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin:4px 0;">${o.phone||''} ${o.email?'· '+o.email:''}</div>
+        <div style="font-size:11px;margin:4px 0;">${itemsText}</div>
+        <div style="font-size:11px;color:var(--muted);">${o.address||''} · ${o.payment||''}</div>
+        ${o.coupon?`<div style="font-size:10px;color:#2e7d2e;margin-top:2px;">Cupom: ${o.coupon} (−R$ ${(o.discount||0).toFixed(2).replace('.',',')})</div>`:''}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+          <strong style="font-size:14px;">R$ ${(o.total||0).toFixed(2).replace('.',',')}</strong>
+          <select class="sort-select" style="font-size:10px;padding:5px 22px 5px 8px;" onchange="updateOrderStatus('${o._id}',this.value)">${statusOpts}</select>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML = '<p style="font-size:12px;color:var(--muted);">Erro ao carregar pedidos.</p>'; }
+}
+
+async function updateOrderStatus(id, status) {
+  try {
+    await db.collection('orders').doc(id).update({ status });
+    showToast('Status atualizado!');
+  } catch(e) { showToast('Erro ao atualizar status.'); }
+}
+
+/* ══ TESTIMONIALS ══ */
+const STAR_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+const SEED_TESTIMONIALS = [
+  { id:'t1', name:'Ana Paula',  location:'Maceió, AL',   text:'Qualidade incrível! A lingerie chegou super bem embalada e o tecido é ainda mais macio do que parecia nas fotos.' },
+  { id:'t2', name:'Camila S.',  location:'Arapiraca, AL', text:'Já sou cliente há 3 anos. Sempre volto porque os modelos são lindos e o atendimento no WhatsApp é rápido demais!' },
+  { id:'t3', name:'Juliana M.', location:'Recife, PE',   text:'O pijama de cetim é um sonho. Comprei para dar de presente e a pessoa amou. Com certeza vou voltar para comprar para mim!' }
+];
+let testimonials = [];
+
+async function loadTestimonials() {
+  try {
+    const snap = await db.collection('testimonials').orderBy('order').get();
+    testimonials = snap.empty ? SEED_TESTIMONIALS : snap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e) { testimonials = SEED_TESTIMONIALS; }
+  renderTestimonials();
+}
+
+function renderTestimonials() {
+  const grid = document.getElementById('testimonialsGrid');
+  if (!grid) return;
+  grid.innerHTML = testimonials.map(t => `
+    <div class="testimonial-card">
+      <div class="testimonial-stars">${STAR_SVG.repeat(5)}</div>
+      <p>"${t.text}"</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">${t.name.charAt(0).toUpperCase()}</div>
+        <div><strong>${t.name}</strong><span>${t.location}</span></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderAdminTestimonials() {
+  const list = document.getElementById('adminTestimonialsList');
+  if (!list) return;
+  list.innerHTML = testimonials.map((t,i) => `
+    <div class="admin-testimonial-item" data-id="${t.id}">
+      <div class="admin-testimonial-meta"><strong>${t.name}</strong><span>${t.location}</span></div>
+      <p style="font-size:11px;color:var(--muted);margin:4px 0 8px;">"${t.text.slice(0,80)}${t.text.length>80?'…':''}"</p>
+      <div style="display:flex;gap:6px;">
+        <button class="admin-save-btn" style="flex:1;font-size:10px;padding:7px 8px;" onclick="editTestimonial('${t.id}')">Editar</button>
+        <button class="delete-product-btn" style="font-size:10px;padding:7px 10px;" onclick="deleteTestimonial('${t.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+      </div>
+    </div>`).join('') + `<button class="add-new-btn" style="margin-top:1rem;" onclick="editTestimonial(null)">+ Novo depoimento</button>`;
+}
+
+function editTestimonial(id) {
+  const t = id ? testimonials.find(x=>x.id===id) : null;
+  document.getElementById('tEditId').value   = id||'';
+  document.getElementById('tEditName').value = t?.name||'';
+  document.getElementById('tEditLoc').value  = t?.location||'';
+  document.getElementById('tEditText').value = t?.text||'';
+  document.getElementById('testimonialEditForm').style.display = 'block';
+}
+
+async function saveTestimonial() {
+  const id   = document.getElementById('tEditId').value;
+  const name = document.getElementById('tEditName').value.trim();
+  const loc  = document.getElementById('tEditLoc').value.trim();
+  const text = document.getElementById('tEditText').value.trim();
+  if (!name||!text) { showToast('Preencha nome e depoimento!'); return; }
+  const data = { name, location: loc, text, order: id ? (testimonials.find(x=>x.id===id)?.order||0) : testimonials.length };
+  try {
+    if (id) {
+      await db.collection('testimonials').doc(id).set(data);
+      const idx = testimonials.findIndex(x=>x.id===id);
+      if (idx>-1) testimonials[idx] = { id, ...data };
+    } else {
+      const ref = await db.collection('testimonials').add(data);
+      testimonials.push({ id: ref.id, ...data });
+    }
+  } catch(e) {
+    // offline: update in-memory only
+    if (id) { const idx=testimonials.findIndex(x=>x.id===id); if(idx>-1) testimonials[idx]={id,...data}; }
+    else { testimonials.push({ id: 't'+Date.now(), ...data }); }
+  }
+  document.getElementById('testimonialEditForm').style.display = 'none';
+  renderTestimonials();
+  renderAdminTestimonials();
+  showToast('Depoimento salvo!');
+}
+
+async function deleteTestimonial(id) {
+  if (!confirm('Remover este depoimento?')) return;
+  try { await db.collection('testimonials').doc(id).delete(); } catch(e) {}
+  testimonials = testimonials.filter(t=>t.id!==id);
+  renderTestimonials();
+  renderAdminTestimonials();
+  showToast('Depoimento removido.');
 }
 
 /* ══ INIT CAROUSEL ON LOAD ══ */
