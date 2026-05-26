@@ -711,7 +711,9 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
   header { padding: 0 1rem; height: 58px; gap: 0.5rem; }
   nav { display: none; }
   .hamburger-btn { display: flex; }
-  .logo { font-size: 18px; letter-spacing: 3px; }
+  .logo { font-size: 14px; letter-spacing: 2px; white-space: nowrap; }
+  header .logo span { display: none; } /* só esconde no header sticky, não no drawer */
+  .mobile-nav-header .icon-btn { font-size: 16px; padding: 6px; } /* botão × do drawer visível */
   .how-to-buy { display: none; }
   /* Esconder texto do botão Entrar, manter só ícone */
   .login-btn { padding: 6px 10px; font-size: 0; gap: 0; border: none; background: none; }
@@ -720,7 +722,7 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
   .icon-btn { font-size: 0; padding: 4px; }
   .icon-btn svg { width: 20px; height: 20px; }
   /* Admin: só ícone no header mobile (sem texto) para não empurrar hambúrguer */
-  #adminBtnContainer { display: none; }
+  #adminBtnContainer { display: none !important; }
   .user-info .admin-btn { font-size: 0 !important; padding: 4px !important; width: auto; display: inline-flex; align-items: center; letter-spacing: 0; }
   .user-info .admin-btn .admin-btn-label { display: none; }
   .user-info .admin-btn .admin-btn-icon { margin-right: 0 !important; width: 20px; height: 20px; }
