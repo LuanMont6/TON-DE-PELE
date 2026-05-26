@@ -91,15 +91,19 @@ async function logout() { await auth.signOut(); showToast('Até logo!'); }
 function updateLoginArea() {
   const area = document.getElementById('loginArea');
   const adminContainer = document.getElementById('adminBtnContainer');
+  const mobileAdminContainer = document.getElementById('mobileAdminContainer');
   if (currentUser) {
     const initials = currentUser.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
-    area.innerHTML = `<div class="user-info"><div class="user-avatar">${initials}</div><button class="login-btn" onclick="logout()" style="font-size:9px;padding:6px 10px;">Sair</button></div>`;
-    adminContainer.innerHTML = currentUser.isAdmin
-      ? `<button class="admin-btn" onclick="openAdmin()"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:3px;"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"/></svg>Admin</button>`
-      : '';
+    // loginArea: avatar + Admin (se admin) — visível no header desktop e mobile
+    area.innerHTML = `<div class="user-info"><div class="user-avatar">${initials}</div>${currentUser.isAdmin ? `<button class="admin-btn" onclick="openAdmin()" title="Admin"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px;" class="admin-btn-icon"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"/></svg><span class="admin-btn-label">Admin</span></button>` : ''}</div>`;
+    // adminBtnContainer: Sair — visível só no desktop
+    adminContainer.innerHTML = `<button class="login-btn" onclick="logout()" style="font-size:9px;padding:6px 10px;">Sair</button>`;
+    // mobile drawer: Sair
+    if (mobileAdminContainer) mobileAdminContainer.innerHTML = `<button class="login-btn" onclick="closeMobileMenu();logout()">Sair</button>`;
   } else {
     area.innerHTML = `<button class="login-btn" onclick="openLogin()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Entrar</button>`;
     adminContainer.innerHTML = '';
+    if (mobileAdminContainer) mobileAdminContainer.innerHTML = '';
   }
 }
 
@@ -1102,7 +1106,10 @@ async function loadAdminOrders() {
         ${o.coupon?`<div style="font-size:10px;color:#2e7d2e;margin-top:2px;">Cupom: ${o.coupon} (−R$ ${(o.discount||0).toFixed(2).replace('.',',')})</div>`:''}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
           <strong style="font-size:14px;">R$ ${(o.total||0).toFixed(2).replace('.',',')}</strong>
-          <select class="sort-select" style="font-size:10px;padding:5px 22px 5px 8px;" onchange="updateOrderStatus('${o._id}',this.value)">${statusOpts}</select>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <select class="sort-select" style="font-size:10px;padding:5px 22px 5px 8px;" onchange="updateOrderStatus('${o._id}',this.value)">${statusOpts}</select>
+            <button onclick="deleteOrder('${o._id}')" title="Remover pedido" style="background:none;border:1px solid rgba(139,46,46,0.35);cursor:pointer;color:#b85c5c;padding:5px 7px;display:flex;align-items:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(139,46,46,0.08)'" onmouseout="this.style.background='none'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -1114,6 +1121,15 @@ async function updateOrderStatus(id, status) {
     await db.collection('orders').doc(id).update({ status });
     showToast('Status atualizado!');
   } catch(e) { showToast('Erro ao atualizar status.'); }
+}
+
+async function deleteOrder(id) {
+  if (!confirm('Remover este pedido permanentemente?')) return;
+  try {
+    await db.collection('orders').doc(id).delete();
+    showToast('Pedido removido.');
+    loadAdminOrders();
+  } catch(e) { showToast('Erro ao remover pedido.'); }
 }
 
 /* ══ TESTIMONIALS ══ */

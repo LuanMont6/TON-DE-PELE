@@ -32,8 +32,10 @@ nav a:hover, nav a.active { color: var(--nude); }
 .icon-btn:hover { opacity: 1; }
 .cart-badge { position: absolute; top: -7px; right: -8px; background: var(--rose); color: #fff; font-size: 9px; font-weight: 600; width: 17px; height: 17px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-family: 'Jost', sans-serif; }
 .cart-badge.visible { display: flex; }
-.admin-btn { background: var(--rose); border: none; cursor: pointer; color: #fff; font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; padding: 8px 16px; transition: background 0.2s; }
+.admin-btn { background: var(--rose); border: none; cursor: pointer; color: #fff; font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; padding: 8px 16px; transition: background 0.2s; display: inline-flex; align-items: center; gap: 4px; }
 .admin-btn:hover { background: var(--rose-dark); }
+.admin-btn-label { display: inline; }
+.admin-btn-icon { width: 10px; height: 10px; flex-shrink: 0; }
 .login-btn { background: none; border: 1px solid rgba(232,213,196,0.3); cursor: pointer; color: var(--nude); font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; padding: 7px 14px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
 .login-btn:hover { border-color: var(--nude); background: rgba(232,213,196,0.08); }
 
@@ -717,9 +719,13 @@ footer { background: var(--dark); padding: 2.5rem 3rem; display: flex; align-ite
   .header-icons { gap: 0.6rem; }
   .icon-btn { font-size: 0; padding: 4px; }
   .icon-btn svg { width: 20px; height: 20px; }
-  .admin-btn { font-size: 9px; padding: 6px 10px; letter-spacing: 1.5px; }
-  /* Avatar do usuário logado */
-  .user-info .login-btn { font-size: 8px !important; padding: 5px 8px !important; border: 1px solid rgba(232,213,196,0.3) !important; }
+  /* Admin: só ícone no header mobile (sem texto) para não empurrar hambúrguer */
+  #adminBtnContainer { display: none; }
+  .user-info .admin-btn { font-size: 0 !important; padding: 4px !important; width: auto; display: inline-flex; align-items: center; letter-spacing: 0; }
+  .user-info .admin-btn .admin-btn-label { display: none; }
+  .user-info .admin-btn .admin-btn-icon { margin-right: 0 !important; width: 20px; height: 20px; }
+  /* Sair no drawer: largura total */
+  #mobileAdminContainer .login-btn { width: 100%; display: block; text-align: center; font-size: 10px !important; padding: 10px 16px !important; border: 1px solid rgba(232,213,196,0.3) !important; margin-bottom: 0.6rem; }
 
   /* ── Hero ── */
   .hero { flex-direction: column; min-height: unset; padding: 0; }
