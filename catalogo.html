@@ -21,9 +21,9 @@
     <div class="logo">Ton de pele<span>lingerie</span></div>
     <nav>
       <a class="active" onclick="scrollToSection('hero')">Início</a>
-      <a onclick="filterCat('Sutiã')">Lingerie</a>
-      <a onclick="filterCat('Pijama')">Sleepwear</a>
-      <a onclick="filterCat('Vestido')">Vestidos</a>
+      <a onclick="filterCat('Sutiã')">Sutiãs</a>
+      <a onclick="filterCat('Calcinha')">Calcinhas</a>
+      <a onclick="filterCat('Pijama')">Pijamas</a>
       <a onclick="filterNewProducts()">Novidades</a>
       <a onclick="filterSaleProducts()">Sale</a>
     </nav>
@@ -76,11 +76,12 @@
     </div>
     <nav class="mobile-nav-links">
       <a onclick="closeMobileMenu();scrollToSection('hero')">Início</a>
-      <a onclick="closeMobileMenu();filterCat('Sutiã')">Lingerie</a>
+      <a onclick="closeMobileMenu();filterCat('Sutiã')">Sutiãs</a>
       <a onclick="closeMobileMenu();filterCat('Calcinha')">Calcinhas</a>
-      <a onclick="closeMobileMenu();filterCat('Pijama')">Sleepwear</a>
-      <a onclick="closeMobileMenu();filterCat('Vestido')">Vestidos</a>
+      <a onclick="closeMobileMenu();filterCat('Calcinha Modeladora')">Modeladores</a>
       <a onclick="closeMobileMenu();filterCat('Linha Maternidade')">Maternidade</a>
+      <a onclick="closeMobileMenu();filterCat('Body')">Bodys</a>
+      <a onclick="closeMobileMenu();filterCat('Pijama')">Pijamas</a>
       <a onclick="closeMobileMenu();filterCat('Cueca')">Cuecas</a>
       <a onclick="closeMobileMenu();filterNewProducts()">Novidades <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"/></svg></a>
       <a onclick="closeMobileMenu();filterSaleProducts()">Sale <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></a>
@@ -198,16 +199,10 @@
     <button class="cat-btn active" data-cat="">Todos</button>
     <button class="cat-btn" data-cat="Sutiã">Sutiãs</button>
     <button class="cat-btn" data-cat="Calcinha">Calcinhas</button>
-    <button class="cat-btn" data-cat="Calcinha Modeladora">Modeladoras</button>
-    <button class="cat-btn" data-cat="Conjunto">Conjuntos</button>
-    <button class="cat-btn" data-cat="Camisola">Camisolas</button>
-    <button class="cat-btn" data-cat="Body">Bodys</button>
-    <button class="cat-btn" data-cat="Vestido">Vestidos</button>
-    <button class="cat-btn" data-cat="Pijama">Pijamas</button>
-    <button class="cat-btn" data-cat="Short Dool">Short Dool</button>
+    <button class="cat-btn" data-cat="Calcinha Modeladora">Modeladores</button>
     <button class="cat-btn" data-cat="Linha Maternidade">Maternidade</button>
-    <button class="cat-btn" data-cat="Meia Calça">Meia Calça</button>
-    <button class="cat-btn" data-cat="Necessaire">Necessaire</button>
+    <button class="cat-btn" data-cat="Body">Bodys</button>
+    <button class="cat-btn" data-cat="Pijama">Pijamas</button>
     <button class="cat-btn" data-cat="Cueca">Cuecas</button>
   </div>
 
@@ -677,15 +672,9 @@
                 <option>Sutiã</option>
                 <option>Calcinha</option>
                 <option>Calcinha Modeladora</option>
-                <option>Conjunto</option>
-                <option>Camisola</option>
-                <option>Body</option>
-                <option>Vestido</option>
-                <option>Pijama</option>
-                <option>Short Dool</option>
                 <option>Linha Maternidade</option>
-                <option>Meia Calça</option>
-                <option>Necessaire</option>
+                <option>Body</option>
+                <option>Pijama</option>
                 <option>Cueca</option>
               </select>
             </div>
