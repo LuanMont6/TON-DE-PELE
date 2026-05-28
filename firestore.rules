@@ -23,76 +23,32 @@ service cloud.firestore {
                     && request.resource.data.isAdmin == false;
       allow update: if request.auth != null
                     && ((request.auth.uid == uid
-                         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']))
+                         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin'])
+                         && request.resource.data.keys().hasOnly(['name','email','phone','wishlist','isAdmin'])
+                         && (!('wishlist' in request.resource.data) || request.resource.data.wishlist.size() <= 200))
                         || isAdmin());
       allow delete: if false;
     }
 
-    // ── orders ────────────────────────────────────────────────────────────
-    // Anyone can create (place an order); only admin can read/update/delete.
+    // orders — anyone can place; only admin reads/updates/deletes
     match /orders/{id} {
-      allow create: if true;
+      allow create: if request.resource.data.keys().hasAll(['name','phone','address','payment','items','total','status'])
+                    && request.resource.data.name    is string && request.resource.data.name.size()    <= 120
+                    && request.resource.data.phone   is string && request.resource.data.phone.size()   <= 30
+                    && request.resource.data.address is string && request.resource.data.address.size() <= 300
+                    && request.resource.data.payment is string && request.resource.data.payment.size() <= 60
+                    && request.resource.data.items   is list
+                    && request.resource.data.items.size() >= 1
+                    && request.resource.data.items.size() <= 50
+                    && request.resource.data.total   is number
+                    && request.resource.data.status  == 'novo';
       allow read, update, delete: if isAdmin();
     }
 
-    // ── coupons ───────────────────────────────────────────────────────────
-    // Public read so the client can validate a code; only admin can manage.
+    // coupons — public read needed for unauthenticated coupon validation; admin manages
     match /coupons/{code} {
       allow read:  if true;
       allow write: if isAdmin();
-    }
-
-  }
-}
-
-
-    // ── products ─────────────────────────────────────────────────────────
-    // Public catalogue: anyone may read.
-    // Only admins may create / update / delete.
-    match /products/{docId} {
-      allow read:  if true;
-      allow write: if isAdmin();
-    }
-
-    // ── testimonials ─────────────────────────────────────────────────────
-    // Visible to all visitors; only admins may manage.
-    match /testimonials/{docId} {
-      allow read:  if true;
-      allow write: if isAdmin();
-    }
-
-    // ── users ─────────────────────────────────────────────────────────────
-    // Each user can read and update their own document.
-    // Admins can read any user document (e.g. to verify claims).
-    //
-    // Critical constraints:
-    //   • A new account is always created with isAdmin = false  (no self-promotion).
-    //   • An existing user cannot flip their own isAdmin field.
-    //   • Nobody can delete a user document from the client.
-    //   • Only an already-admin can set isAdmin = true on another document.
-    match /users/{userId} {
-      allow read: if request.auth != null
-                  && (request.auth.uid == userId || isAdmin());
-
-      allow create: if request.auth != null
-                    && request.auth.uid == userId
-                    // enforce isAdmin starts as false so a new user can't give
-                    // themselves admin rights during account creation
-                    && request.resource.data.isAdmin == false;
-
-      allow update: if request.auth != null
-                    && (
-                      // the user edits their own doc …
-                      (request.auth.uid == userId
-                       // … but cannot touch the isAdmin field
-                       && !request.resource.data.diff(resource.data)
-                              .affectedKeys().hasAny(['isAdmin']))
-                      ||
-                      // … or an admin can update any field (including isAdmin)
-                      isAdmin()
-                    );
-
-      allow delete: if false; // never allow client-side user deletion
     }
 
   }
