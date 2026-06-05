@@ -69,6 +69,7 @@ nav a:hover, nav a.active { color: var(--nude); }
 .categories { padding: 3rem 3rem 1.5rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .cat-btn { background: transparent; border: 1px solid var(--border); padding: 9px 22px; font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; cursor: pointer; color: var(--muted); transition: all 0.2s; font-weight: 400; }
 .cat-btn:hover, .cat-btn.active { background: var(--dark); color: var(--cream); border-color: var(--dark); }
+.cat-tag { display: inline-block; background: var(--rose); color: #fff; font-size: 8px; letter-spacing: 1px; padding: 2px 6px; margin-left: 6px; vertical-align: middle; font-weight: 600; border-radius: 2px; text-transform: uppercase; }
 .section-header { padding: 0 3rem 2rem; display: flex; align-items: baseline; justify-content: space-between; }
 .section-title { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; color: var(--dark); }
 .section-title em { font-style: italic; color: var(--rose); }
@@ -86,6 +87,7 @@ nav a:hover, nav a.active { color: var(--nude); }
 .card-badge.sale { background: var(--dark); }
 .card-badge.new { background: var(--rose); }
 .card-badge.esgotado { background: #7A6A6A; }
+.card-badge.namorados { background: #b5305a; }
 .card-out-of-stock .card-img-placeholder { filter: grayscale(0.45); opacity: 0.85; }
 .quick-add-disabled { background: #7A6A6A !important; cursor: not-allowed !important; letter-spacing: 3px; }
 .modal-add-esgotado { background: #7A6A6A !important; cursor: not-allowed !important; }

@@ -562,7 +562,7 @@ function renderGrid(filter) {
     const outOfStock = isOutOfStock(p);
     let badgeHTML = '';
     if (outOfStock) badgeHTML = `<span class="card-badge esgotado">Esgotado</span>`;
-    else if (p.badge) badgeHTML = `<span class="card-badge ${p.badge}">${p.badge === 'new' ? 'Novo' : '-' + getDiscount(p) + '%'}</span>`;
+    else if (p.badge) badgeHTML = `<span class="card-badge ${p.badge}">${p.badge === 'new' ? 'Novo' : p.badge === 'namorados' ? '\u2665 Namorados' : '-' + getDiscount(p) + '%'}</span>`;
     const priceHTML = p.oldPrice ? `<span class="old">${p.oldPrice}</span><span class="sale-p">${p.price}</span>` : p.price;
     const colorsHTML = p.colors.map(c => `<div class="color-dot" style="background:${c}" title="${c}"></div>`).join('');
     const isFav = wishlist.includes(p.id);
